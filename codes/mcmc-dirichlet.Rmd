@@ -67,7 +67,7 @@ M_s <- function(s, A, x) {
 }
 ```
 
-### $\hat{\theta}_s(j)$: Probabilidade estimada
+### $\hat{\theta}_s(j)$: Probabilidade estimada via máxima verossimilhança
 
 O estimador de máxima verissimilhança das probabilidades de transição de uma cadeia estocástica é dado por $$\hat{\theta}_s(j) = \frac{a_s(j)}{M_s}$$
 Por convenção, caso $M_s = 0$, definimos $\hat{\theta}_s(j) = \frac{1}{|A|}$.
@@ -89,7 +89,7 @@ theta_sj <- function(j, s, A, amostra){
 }
 ```
 
-### Matriz de transição estimada
+### Matriz de transição estimada via máxima verossilhança
 
 ```{r}
 # tau: contextos
@@ -158,7 +158,7 @@ GS_dirichlet <- function(x, s, A, num_iter = 1000) {
 ## Exemplo 1
 
 ```{r}
-tau <- list("000" = c(0.5, 0.5),
+tau1 <- list("000" = c(0.5, 0.5),
             "001" = c(0.4, 0.6),
             "010" = c(0.7, 0.3),
             "100" = c(0.2, 0.8),
@@ -167,51 +167,79 @@ tau <- list("000" = c(0.5, 0.5),
             "110" = c(0.8, 0.2),
             "111" = c(0.1, 0.9))
 
-contextos <- names(tau)
-A <- c("0", "1")
+contextos1 <- names(tau1)
+A1 <- c("0", "1")
 set.seed(999)
-amostra1 <- as.numeric(strsplit(generate_data(tau, 1000), "")[[1]])
+amostra1 <- as.numeric(strsplit(generate_data(tau1, 5000), "")[[1]])
 
-estim_MLE <- Q_estim(contextos, A, amostra1)
+orig1 <- matrix(unlist(tau1), nrow = 8, byrow = TRUE)
+rownames(orig1) <- contextos1
+colnames(orig1) <- A1
+
+cat("Matriz que gerou os dados: \n")
+print(orig1)
+
+estim_MLE1 <- Q_estim(contextos1, A1, amostra1)
 cat("Estimação por máxima verossimilhança: \n")
-print(estim_MLE)
+print(estim_MLE1)
 
 num_iter <- 5000
 set.seed(999)
-e_000 <- GS_dirichlet(amostra1, "000", A, num_iter)
-e_001 <- GS_dirichlet(amostra1, "001", A, num_iter)
-e_010 <- GS_dirichlet(amostra1, "010", A, num_iter)
-e_100 <- GS_dirichlet(amostra1, "100", A, num_iter)
-e_011 <- GS_dirichlet(amostra1, "011", A, num_iter)
-e_101 <- GS_dirichlet(amostra1, "101", A, num_iter)
-e_110 <- GS_dirichlet(amostra1, "110", A, num_iter)
-e_111 <- GS_dirichlet(amostra1, "111", A, num_iter)
+e_000 <- GS_dirichlet(amostra1, "000", A1, num_iter)
+e_001 <- GS_dirichlet(amostra1, "001", A1, num_iter)
+e_010 <- GS_dirichlet(amostra1, "010", A1, num_iter)
+e_100 <- GS_dirichlet(amostra1, "100", A1, num_iter)
+e_011 <- GS_dirichlet(amostra1, "011", A1, num_iter)
+e_101 <- GS_dirichlet(amostra1, "101", A1, num_iter)
+e_110 <- GS_dirichlet(amostra1, "110", A1, num_iter)
+e_111 <- GS_dirichlet(amostra1, "111", A1, num_iter)
 
+estim_GS1 <- matrix(c(mean(e_000[,1]), mean(e_000[,2]), 
+                     mean(e_001[,1]), mean(e_001[,2]),
+                     mean(e_010[,1]), mean(e_010[,2]),
+                     mean(e_100[,1]), mean(e_100[,2]), 
+                     mean(e_011[,1]), mean(e_011[,2]), 
+                     mean(e_101[,1]), mean(e_101[,2]), 
+                     mean(e_110[,1]), mean(e_110[,2]), 
+                     mean(e_111[,1]), mean(e_111[,2])), nrow = 8, byrow = TRUE)
+rownames(estim_GS1) <- contextos1
+colnames(estim_GS1) <- A1
 cat("Estimação pelo GS: \n")
-cat(c(mean(e_000[,1]), mean(e_000[,2])), "\n", 
-    c(mean(e_001[,1]), mean(e_001[,2])), "\n",
-    c(mean(e_010[,1]), mean(e_010[,2])), "\n",
-    c(mean(e_100[,1]), mean(e_100[,2])), "\n",
-    c(mean(e_011[,1]), mean(e_011[,2])), "\n",
-    c(mean(e_101[,1]), mean(e_101[,2])), "\n",
-    c(mean(e_110[,1]), mean(e_110[,2])), "\n",
-    c(mean(e_111[,1]), mean(e_111[,2])))
+print(estim_GS1)
+cat("Diferença entre os estimadores: \n")
+print(abs(estim_GS1 - estim_MLE1))
+
+cat("Erro quadrático médio MLE: \n")
+print(unname(colMeans((estim_MLE1 - orig1)^2)[1]))
+
+cat("Erro quadrático médio GS: \n")
+print(unname(colMeans((estim_GS1 - orig1)^2)[1]))
+
+
 
 ```
 
 ```{r}
+
 medias_000mov <- sapply(1:(num_iter-500), function(i) c(mean(e_000[i:(500+i),1])))
 medias_000ac <- sapply(1:num_iter, function(i) c(mean(e_000[1:i,1])))
 medias_111mov <- sapply(1:(num_iter-500), function(i) c(mean(e_111[i:(500+i),1])))
 medias_111ac <- sapply(1:num_iter, function(i) c(mean(e_111[1:i,1])))
 
 
-par(mfrow=c(2, 2))
+plot(e_000[,1], type = "l", main = "Observações folha 000",
+     xlab = "Posição no vetor", ylab = "Médias acumuladas",
+     col = "blue", lwd = 2)
+
 plot(medias_000mov, type = "l", main = "Média móvel tamanho 500 da folha 000",
      xlab = "Posição no vetor", ylab = "Médias acumuladas",
      col = "blue", lwd = 2)
 
 plot(medias_000ac, type = "l", main = "Média acumulada da folha 000",
+     xlab = "Posição no vetor", ylab = "Médias acumuladas",
+     col = "blue", lwd = 2)
+
+plot(e_111[,1], type = "l", main = "Observações folha 111",
      xlab = "Posição no vetor", ylab = "Médias acumuladas",
      col = "blue", lwd = 2)
 
@@ -223,33 +251,45 @@ plot(medias_111ac, type = "l", main = "Média acumulada da folha 111",
      xlab = "Posição no vetor", ylab = "Médias acumuladas",
      col = "blue", lwd = 2)
 
+
+
+
 ```
 
 ## Exemplo 2
 
 ```{r}
-tau2 <- list("3" = c(0.1, 0.5, 0.3, 0.1),
-               "10" = c(0.3, 0.1, 0.2, 0.4),
-               "20" = c(0.1, 0.1, 0.1, 0.7),
-               "30" = c(0.2, 0.3, 0.5, 0),
-               "01" = c(0.3, 0.1, 0.2, 0.4),
-               "11" = c(0.1, 0.1, 0.1, 0.7),
-               "21" = c(0.2, 0.3, 0.5, 0),
-               "31" = c(0.1, 0.5, 0.3, 0.1),
-               "02" = c(0.3, 0.1, 0.2, 0.4),
-               "12" = c(0.1, 0.1, 0.1, 0.7),
-               "22" = c(0.2, 0.3, 0.5, 0),
-               "32" = c(0.1, 0.5, 0.3, 0.1),
-               "000" = c(0.3, 0.1, 0.2, 0.4),
-               "100" = c(0.1, 0.1, 0.1, 0.7),
-               "200" = c(0.2, 0.3, 0.5, 0),
-               "300" = c(0.1, 0.5, 0.3, 0.1))
+tau2 <- list("3"   = c(0.1, 0.5, 0.3, 0.1),
+             "01"  = c(0.3, 0.1, 0.2, 0.4),
+             "02"  = c(0.1, 0.1, 0.1, 0.7),
+             "03"  = c(0.2, 0.3, 0.5, 0),
+             "10"  = c(0.3, 0.1, 0.2, 0.4),
+             "11"  = c(0.1, 0.1, 0.1, 0.7),
+             "12"  = c(0.2, 0.3, 0.5, 0),
+             "13"  = c(0.1, 0.5, 0.3, 0.1),
+             "20"  = c(0.3, 0.1, 0.2, 0.4),
+             "21"  = c(0.1, 0.1, 0.1, 0.7),
+             "22"  = c(0.2, 0.3, 0.5, 0),
+             "23"  = c(0.1, 0.5, 0.3, 0.1),
+             "000" = c(0.3, 0.1, 0.2, 0.4),
+             "001" = c(0.1, 0.1, 0.1, 0.7),
+             "002" = c(0.2, 0.3, 0.5, 0),
+             "003" = c(0.1, 0.5, 0.3, 0.1))
 alfabeto2 <- c(0, 1, 2, 3)
+
+contextos_rev2 <- sapply(names(tau2), function(x) paste0(rev(strsplit(x, "")[[1]]), collapse = ""))
 
 set.seed(999)
 amostra2 <- as.numeric(strsplit(generate_data(tau2, 10000), "")[[1]])
 
-estim_MLE2 <- Q_estim(names(tau2), alfabeto2, amostra2)
+orig2 <- matrix(unlist(tau2), nrow = 16, byrow = TRUE)
+rownames(orig2) <- contextos_rev2
+colnames(orig2) <- alfabeto2
+
+cat("Matriz que gerou os dados: \n")
+print(orig2)
+
+estim_MLE2 <- Q_estim(contextos_rev2, alfabeto2, amostra2)
 cat("Estimação por máxima verossimilhança: \n")
 print(estim_MLE2)
 
@@ -272,29 +312,38 @@ e_100 <- GS_dirichlet(amostra2, "100", alfabeto2, num_iter)
 e_200 <- GS_dirichlet(amostra2, "200", alfabeto2, num_iter)
 e_300 <- GS_dirichlet(amostra2, "300", alfabeto2, num_iter)
 
+estim_GS2 <- matrix(c(mean(e_3[,1]), mean(e_3[,2]), mean(e_3[,3]), mean(e_3[,4]), 
+                      mean(e_10[,1]), mean(e_10[,2]), mean(e_10[,3]), mean(e_10[,4]),
+                      mean(e_20[,1]), mean(e_20[,2]), mean(e_20[,3]), mean(e_20[,4]),
+                      mean(e_30[,1]), mean(e_30[,2]), mean(e_30[,3]), mean(e_30[,4]),
+                      mean(e_01[,1]), mean(e_01[,2]), mean(e_01[,3]), mean(e_01[,4]),
+                      mean(e_11[,1]), mean(e_11[,2]), mean(e_11[,3]), mean(e_11[,4]),
+                      mean(e_21[,1]), mean(e_21[,2]), mean(e_21[,3]), mean(e_21[,4]),
+                      mean(e_31[,1]), mean(e_31[,2]), mean(e_31[,3]), mean(e_31[,4]),
+                      mean(e_02[,1]), mean(e_02[,2]), mean(e_02[,3]), mean(e_02[,4]),
+                      mean(e_12[,1]), mean(e_12[,2]), mean(e_12[,3]), mean(e_12[,4]),
+                      mean(e_22[,1]), mean(e_22[,2]), mean(e_22[,3]), mean(e_22[,4]),
+                      mean(e_32[,1]), mean(e_32[,2]), mean(e_32[,3]), mean(e_32[,4]),
+                      mean(e_000[,1]), mean(e_000[,2]), mean(e_000[,3]), mean(e_000[,4]),
+                      mean(e_100[,1]), mean(e_100[,2]), mean(e_100[,3]), mean(e_100[,4]),
+                      mean(e_200[,1]), mean(e_200[,2]), mean(e_200[,3]), mean(e_200[,4]),
+                      mean(e_300[,1]), mean(e_300[,2]), mean(e_300[,3]), mean(e_300[,4])), nrow = 16, byrow = TRUE)
+
+rownames(estim_GS2) <- contextos_rev2
+colnames(estim_GS2) <- alfabeto2
+
+
 cat("Estimação pelo GS: \n")
-cat(c(mean(e_3[,1]), mean(e_3[,2]), mean(e_3[,3]), mean(e_3[,4])), "\n",
-    c(mean(e_10[,1]), mean(e_10[,2]), mean(e_10[,3]), mean(e_10[,4])), "\n",
-    c(mean(e_20[,1]), mean(e_20[,2]), mean(e_20[,3]), mean(e_20[,4])), "\n",
-    c(mean(e_30[,1]), mean(e_30[,2]), mean(e_30[,3]), mean(e_30[,4])), "\n",
-    c(mean(e_01[,1]), mean(e_01[,2]), mean(e_01[,3]), mean(e_01[,4])), "\n",
-    c(mean(e_11[,1]), mean(e_11[,2]), mean(e_11[,3]), mean(e_11[,4])), "\n",
-    c(mean(e_21[,1]), mean(e_21[,2]), mean(e_21[,3]), mean(e_21[,4])), "\n",
-    c(mean(e_31[,1]), mean(e_31[,2]), mean(e_31[,3]), mean(e_31[,4])), "\n",
-    c(mean(e_02[,1]), mean(e_02[,2]), mean(e_02[,3]), mean(e_02[,4])), "\n",
-    c(mean(e_12[,1]), mean(e_12[,2]), mean(e_12[,3]), mean(e_12[,4])), "\n",
-    c(mean(e_22[,1]), mean(e_22[,2]), mean(e_22[,3]), mean(e_22[,4])), "\n",
-    c(mean(e_32[,1]), mean(e_32[,2]), mean(e_32[,3]), mean(e_32[,4])), "\n",
-    c(mean(e_000[,1]), mean(e_000[,2]), mean(e_000[,3]), mean(e_000[,4])), "\n",
-    c(mean(e_100[,1]), mean(e_100[,2]), mean(e_100[,3]), mean(e_100[,4])), "\n",
-    c(mean(e_200[,1]), mean(e_200[,2]), mean(e_200[,3]), mean(e_200[,4])), "\n",
-    c(mean(e_300[,1]), mean(e_300[,2]), mean(e_300[,3]), mean(e_300[,4])))
+print(estim_GS2)
 
-a_sj(c(1,0,0), 0, amostra2) / M_s(3, alfabeto2, amostra2)
+cat("Diferença entre os estimadores: \n")
+print(abs(estim_GS2 - estim_MLE2))
 
-```
+cat("Erro quadrático médio MLE: \n")
+print(mean(unname(colMeans((estim_MLE2 - orig2)^2))))
 
-```{r}
+cat("Erro quadrático médio GS: \n")
+print(mean(unname(colMeans((estim_GS2 - orig2)^2))))
 
 ```
 
