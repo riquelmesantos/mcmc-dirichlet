@@ -17,11 +17,21 @@ output:
 if(!require(BCT)){
     install.packages("BCT")
     library(BCT)}
-
 if(!require(LaplacesDemon)){
     install.packages("LaplacesDemon")
     library(LaplacesDemon)}
-
+if(!require(ggplot2)){
+    install.packages("ggplot2")
+    library(ggplot2)}
+if(!require(tidyr)){
+    install.packages("tidyr")
+    library(tidyr)}
+if(!require(latex2exp)){
+    install.packages("latex2exp")
+    library(latex2exp)}
+if(!require(dplyr)){
+    install.packages("dplyr")
+    library(dplyr)}
 ```
 
 ### $a_s(j)$: Número de ocorrências de uma sequêcia seguida de um simbolo específico na amostra
@@ -220,41 +230,97 @@ print(unname(colMeans((estim_GS1 - orig1)^2)[1]))
 ```
 
 ```{r}
-
-medias_000mov <- sapply(1:(num_iter-500), function(i) c(mean(e_000[i:(500+i),1])))
-medias_000ac <- sapply(1:num_iter, function(i) c(mean(e_000[1:i,1])))
-medias_111mov <- sapply(1:(num_iter-500), function(i) c(mean(e_111[i:(500+i),1])))
-medias_111ac <- sapply(1:num_iter, function(i) c(mean(e_111[1:i,1])))
-
-
 plot(e_000[,1], type = "l", main = "Observações folha 000",
-     xlab = "Posição no vetor", ylab = "Médias acumuladas",
-     col = "blue", lwd = 2)
-
-plot(medias_000mov, type = "l", main = "Média móvel tamanho 500 da folha 000",
-     xlab = "Posição no vetor", ylab = "Médias acumuladas",
-     col = "blue", lwd = 2)
-
-plot(medias_000ac, type = "l", main = "Média acumulada da folha 000",
      xlab = "Posição no vetor", ylab = "Médias acumuladas",
      col = "blue", lwd = 2)
 
 plot(e_111[,1], type = "l", main = "Observações folha 111",
      xlab = "Posição no vetor", ylab = "Médias acumuladas",
      col = "blue", lwd = 2)
-
-plot(medias_111mov, type = "l", main = "Média móvel tamanho 500 da folha 111",
-     xlab = "Posição no vetor", ylab = "Médias acumuladas",
-     col = "blue", lwd = 2)
-
-plot(medias_111ac, type = "l", main = "Média acumulada da folha 111",
-     xlab = "Posição no vetor", ylab = "Médias acumuladas",
-     col = "blue", lwd = 2)
-
-
-
-
 ```
+
+```{r}
+num_iter <- 5000
+tam_medmov <- 500
+set.seed(999)
+e1_000 <- GS_dirichlet(amostra1, "000", A1, num_iter)
+med_e1_000 <- cumsum(e1_000[,1]) / 1:num_iter
+mov_e1_000 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e1_000[i:(tam_medmov+i),1])))
+
+set.seed(998)
+e2_000 <- GS_dirichlet(amostra1, "000", A1, num_iter)
+med_e2_000 <- cumsum(e2_000[,1]) / 1:num_iter
+mov_e2_000 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e2_000[i:(tam_medmov+i),1])))
+
+set.seed(997)
+e3_000 <- GS_dirichlet(amostra1, "000", A1, num_iter)
+med_e3_000 <- cumsum(e3_000[,1]) / 1:num_iter
+mov_e3_000 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e3_000[i:(tam_medmov+i),1])))
+                     
+set.seed(996)
+e4_000 <- GS_dirichlet(amostra1, "000", A1, num_iter)
+med_e4_000 <- cumsum(e4_000[,1]) / 1:num_iter
+mov_e4_000 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e4_000[i:(tam_medmov+i),1])))
+
+
+set.seed(995)
+e5_000 <- GS_dirichlet(amostra1, "000", A1, num_iter)
+med_e5_000 <- cumsum(e5_000[,1]) / 1:num_iter
+mov_e5_000 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e5_000[i:(tam_medmov+i),1])))
+
+mcmc_med_000 <- data.frame(
+  iterations = rep(1:5000, 5),
+  values = c(med_e1_000, med_e2_000, med_e3_000, med_e4_000, med_e5_000),
+  Chain = factor(rep(1:5, each = 5000))
+)
+
+grafico1 <- mcmc_med_000 %>%
+ filter(values <= 0.52) %>%
+ ggplot() +
+  aes(x = iterations, y = values, colour = Chain) +
+  geom_line() +
+  scale_color_hue(direction = 1) +
+  labs(
+    x = "Iterações MCMC",
+    y = TeX("$\\frac{1}{t}\\sum_{i = 1}^{t} \\theta^{(t)}_{0 0 0}(0)$"),
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none",
+    axis.title.y = element_text(size = 17L),
+    axis.title.x = element_text(size = 17L))
+
+
+grafico1
+#ggsave("grafico1.png", plot = grafico1, width = 10, height = 4, dpi = 300, bg = "white", path = paste0(getwd(), "/plots"))
+```
+
+```{r}
+mcmc_mov_000 <- data.frame(
+  iterations = rep(1:(num_iter - tam_medmov), 5),
+  values = c(mov_e1_000, mov_e2_000, mov_e3_000, mov_e4_000, mov_e5_000),
+  Chain = factor(rep(1:5, each = (num_iter - tam_medmov)))
+)
+
+grafico2 <- mcmc_mov_000 %>%
+ ggplot() +
+  aes(x = iterations, y = values, colour = Chain) +
+  geom_line() +
+  scale_color_hue(direction = 1) +
+  labs(
+    x = "Iterações MCMC",
+    y = TeX("$\\frac{1}{500}\\sum_{i = t}^{t+500} \\theta^{(t)}_{0 0 0}(0)$"),
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none",
+    axis.title.y = element_text(size = 17L),
+    axis.title.x = element_text(size = 17L))
+
+grafico2
+#ggsave("grafico2.png", plot = grafico2, width = 10, height = 4, dpi = 300, bg = "white", path = paste0(getwd(), "/plots"))
+```
+
+
+
 
 ## Exemplo 2
 
@@ -280,7 +346,7 @@ alfabeto2 <- c(0, 1, 2, 3)
 contextos_rev2 <- sapply(names(tau2), function(x) paste0(rev(strsplit(x, "")[[1]]), collapse = ""))
 
 set.seed(999)
-amostra2 <- as.numeric(strsplit(generate_data(tau2, 10000), "")[[1]])
+amostra2 <- as.numeric(strsplit(generate_data(tau2, 5000), "")[[1]])
 
 orig2 <- matrix(unlist(tau2), nrow = 16, byrow = TRUE)
 rownames(orig2) <- contextos_rev2
@@ -293,7 +359,7 @@ estim_MLE2 <- Q_estim(contextos_rev2, alfabeto2, amostra2)
 cat("Estimação por máxima verossimilhança: \n")
 print(estim_MLE2)
 
-num_iter <- 5000
+num_iter <- 10000
 set.seed(999)
 e_3 <- GS_dirichlet(amostra2, "3", alfabeto2, num_iter)
 e_10 <- GS_dirichlet(amostra2, "10", alfabeto2, num_iter)
@@ -344,8 +410,96 @@ print(mean(unname(colMeans((estim_MLE2 - orig2)^2))))
 
 cat("Erro quadrático médio GS: \n")
 print(mean(unname(colMeans((estim_GS2 - orig2)^2))))
-
 ```
+
+```{r}
+plot(e_32[,1], type = "l", main = "Observações folha 23",
+     xlab = "Posição no vetor", ylab = "Médias acumuladas",
+     col = "blue", lwd = 2)
+```
+
+```{r}
+num_iter <- 5000
+tam_medmov <- 500
+set.seed(999)
+e1_32 <- GS_dirichlet(amostra1, "32", alfabeto2, num_iter)
+med_e1_32 <- cumsum(e1_32[,2]) / 1:num_iter
+mov_e1_32 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e1_32[i:(tam_medmov+i),2])))
+
+set.seed(998)
+e2_32 <- GS_dirichlet(amostra1, "32", alfabeto2, num_iter)
+med_e2_32 <- cumsum(e2_32[,2]) / 1:num_iter
+mov_e2_32 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e2_32[i:(tam_medmov+i),2])))
+
+set.seed(997)
+e3_32 <- GS_dirichlet(amostra1, "32", alfabeto2, num_iter)
+med_e3_32 <- cumsum(e3_32[,2]) / 1:num_iter
+mov_e3_32 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e3_32[i:(tam_medmov+i),2])))
+                     
+set.seed(996)
+e4_32 <- GS_dirichlet(amostra1, "32", alfabeto2, num_iter)
+med_e4_32 <- cumsum(e4_32[,2]) / 1:num_iter
+mov_e4_32 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e4_32[i:(tam_medmov+i),2])))
+
+
+set.seed(995)
+e5_32 <- GS_dirichlet(amostra1, "32", alfabeto2, num_iter)
+med_e5_32 <- cumsum(e5_32[,2]) / 1:num_iter
+mov_e5_32 <- sapply(1:(num_iter-tam_medmov), function(i) c(mean(e5_32[i:(tam_medmov+i),2])))
+
+mcmc_med_32 <- data.frame(
+  iterations = rep(1:5000, 5),
+  values = c(med_e1_32, med_e2_32, med_e3_32, med_e4_32, med_e5_32),
+  Chain = factor(rep(1:5, each = 5000))
+)
+
+grafico3 <- mcmc_med_32 %>%
+ filter(values <= 0.8 & values >= 0.2) %>%
+ ggplot() +
+  aes(x = iterations, y = values, colour = Chain) +
+  geom_line() +
+  scale_color_hue(direction = 1) +
+  labs(
+    x = "Iterações MCMC",
+    y = TeX("$\\frac{1}{t}\\sum_{i = 1}^{t} \\theta^{(t)}_{2 3}(1)$"),
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none",
+    axis.title.y = element_text(size = 17L),
+    axis.title.x = element_text(size = 17L))
+
+
+grafico3
+#ggsave("grafico3.png", plot = grafico3, width = 10, height = 4, dpi = 300, bg = "white", path = paste0(getwd(), "/plots"))
+```
+
+```{r}
+mcmc_mov_32 <- data.frame(
+  iterations = rep(1:(num_iter - tam_medmov), 5),
+  values = c(mov_e1_32, mov_e2_32, mov_e3_32, mov_e4_32, mov_e5_32),
+  Chain = factor(rep(1:5, each = (num_iter - tam_medmov)))
+)
+
+grafico4 <- mcmc_mov_32 %>%
+ ggplot() +
+  aes(x = iterations, y = values, colour = Chain) +
+  geom_line() +
+  scale_color_hue(direction = 1) +
+  labs(
+    x = "Iterações MCMC",
+    y = TeX("$\\frac{1}{500}\\sum_{i = t}^{t+500} \\theta^{(t)}_{2 3}(1)$"),
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none",
+    axis.title.y = element_text(size = 17L),
+    axis.title.x = element_text(size = 17L))
+
+grafico4
+#ggsave("grafico4.png", plot = grafico4, width = 10, height = 4, dpi = 300, bg = "white", path = paste0(getwd(), "/plots"))
+```
+
+
+
 
 
 
