@@ -163,6 +163,12 @@ GS_dirichlet <- function(x, s, A, num_iter = 1000) {
   
   return(samples)
 }
+
+dirichlet_mean <- function(x, s, A){
+  A <- as.character(A)
+  a_s <- sapply(A, function(j) a_sj(as.numeric(strsplit(s, "")[[1]]), j, x))
+  return((a_s+(1/2)) / sum(a_s + (1/2)))
+}
 ```
 
 ## Exemplo 1
@@ -214,6 +220,18 @@ estim_GS1 <- matrix(c(mean(e_000[,1]), mean(e_000[,2]),
                      mean(e_111[,1]), mean(e_111[,2])), nrow = 8, byrow = TRUE)
 rownames(estim_GS1) <- contextos1
 colnames(estim_GS1) <- A1
+
+estim_DirMean1 <- matrix(c(dirichlet_mean(amostra1, "000", A1),
+                          dirichlet_mean(amostra1, "001", A1),
+                          dirichlet_mean(amostra1, "010", A1),
+                          dirichlet_mean(amostra1, "100", A1),
+                          dirichlet_mean(amostra1, "011", A1),
+                          dirichlet_mean(amostra1, "101", A1),
+                          dirichlet_mean(amostra1, "110", A1),
+                          dirichlet_mean(amostra1, "111", A1)), nrow = 8, byrow = TRUE)
+rownames(estim_DirMean) <- contextos1
+colnames(estim_DirMean) <- A1
+
 cat("Estimação pelo GS: \n")
 print(estim_GS1)
 cat("Diferença entre os estimadores: \n")
@@ -224,6 +242,9 @@ print(unname(colMeans((estim_MLE1 - orig1)^2)[1]))
 
 cat("Erro quadrático médio GS: \n")
 print(unname(colMeans((estim_GS1 - orig1)^2)[1]))
+
+cat("Erro quadrático médio E(X): \n")
+print(unname(colMeans((estim_DirMean1 - orig1)^2)[1]))
 
 
 
@@ -398,6 +419,25 @@ estim_GS2 <- matrix(c(mean(e_3[,1]), mean(e_3[,2]), mean(e_3[,3]), mean(e_3[,4])
 rownames(estim_GS2) <- contextos_rev2
 colnames(estim_GS2) <- alfabeto2
 
+estim_DirMean2 <- matrix(c(dirichlet_mean(amostra2, "3", alfabeto2),
+                          dirichlet_mean(amostra2, "10", alfabeto2),
+                          dirichlet_mean(amostra2, "20", alfabeto2),
+                          dirichlet_mean(amostra2, "30", alfabeto2),
+                          dirichlet_mean(amostra2, "01", alfabeto2),
+                          dirichlet_mean(amostra2, "11", alfabeto2),
+                          dirichlet_mean(amostra2, "21", alfabeto2),
+                          dirichlet_mean(amostra2, "31", alfabeto2),
+                          dirichlet_mean(amostra2, "02", alfabeto2),
+                          dirichlet_mean(amostra2, "12", alfabeto2),
+                          dirichlet_mean(amostra2, "22", alfabeto2),
+                          dirichlet_mean(amostra2, "32", alfabeto2),
+                          dirichlet_mean(amostra2, "000", alfabeto2),
+                          dirichlet_mean(amostra2, "100", alfabeto2),
+                          dirichlet_mean(amostra2, "200", alfabeto2),
+                          dirichlet_mean(amostra2, "300", alfabeto2)), nrow = 16, byrow = TRUE)
+rownames(estim_DirMean2) <- contextos_rev2
+colnames(estim_DirMean2) <- alfabeto2
+
 
 cat("Estimação pelo GS: \n")
 print(estim_GS2)
@@ -410,6 +450,10 @@ print(mean(unname(colMeans((estim_MLE2 - orig2)^2))))
 
 cat("Erro quadrático médio GS: \n")
 print(mean(unname(colMeans((estim_GS2 - orig2)^2))))
+
+
+cat("Erro quadrático médio E(X): \n")
+print(mean(unname(colMeans((estim_DirMean2 - orig2)^2))))
 ```
 
 ```{r}
