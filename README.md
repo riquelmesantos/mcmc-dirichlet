@@ -9,6 +9,7 @@ São criadas duas funções:
 
 Por fim, é feito um estudo comparando as estimativas Bayesianas com as obtidas pelo método de máxima verossimilhança. 
 
+## Conteúdo:
 
 <details>
 <summary> ~\codes: </summary>
